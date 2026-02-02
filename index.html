@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Florencia 2026 | Guía PWA</title>
+    
+<!-- PWA -->
+    <link rel="icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj4eAhPZi-wRDG4ROiBAC_aUjXozOcgs3bAOFccQ74NtrVgbj7M41yqOdmhtoc8LRgxSNHqCYDyGgY69Is7ajx8CTjjiL00-56BvUou9fmYx2Ao5sg-XJbOA-HHkJ9Nv55EqOVrfWaUZWphzMPFZ6wtWmYVrDQFcCWiCXBPXtd0u6BRDvJBmpv-71yWNf0/s320/Gemini_Generated_Image_whw9ufwhw9ufwhw9.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        genova: { 
+                          50: '#eff6ff', 
+                          100: '#dbeafe', 
+                          200: '#bfdbfe', 
+                          300: '#93c5fd', 
+                          400: '#60a5fa', 
+                          500: '#3b82f6', 
+                          600: '#2563eb', 
+                          700: '#1d4ed8', 
+                          800: '#1e40af', 
+                          900: '#1e3a8a' 
+                        },
+                        superba: {
+                          gold: '#D97706',
+                          red: '#BE123C',
+                          blue: '#1E3A8A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overscroll-behavior-y: none; background-color: #f8fafc; }
+        body { font-family: 'Roboto Condensed', sans-serif; -webkit-tap-highlight-color: transparent; }
+        #root { height: 100%; width: 100%; display: flex; flex-direction: column; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .custom-h-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-h-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-h-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .leaflet-bottom { bottom: 85px !important; }
+        
+        .user-marker {
+             animation: pulse-marker 2s infinite;
+        }
+
+        @keyframes pulse-marker {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "leaflet": "https://esm.sh/leaflet@^1.9.4",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

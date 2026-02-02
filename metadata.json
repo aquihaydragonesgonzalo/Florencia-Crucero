@@ -1,0 +1,7 @@
+{
+  "name": "Florencia CRUCERO",
+  "description": "A PWA guide for the Florence 2026 shore excursion from Livorno, featuring itinerary tracking, budget management, and offline-capable maps.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
