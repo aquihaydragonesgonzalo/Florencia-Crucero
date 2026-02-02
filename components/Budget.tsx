@@ -52,7 +52,7 @@ const Budget: React.FC<BudgetProps> = ({ itinerary }) => {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
-                                    {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />))}
+                                    {chartData.map((_entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontFamily: 'inherit', fontWeight: 'bold' }} />
                             </PieChart>
