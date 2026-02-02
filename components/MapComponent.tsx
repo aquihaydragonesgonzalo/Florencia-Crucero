@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { Layers } from 'lucide-react';
 import { Coords, ItineraryItem } from '../types';
 import { GPX_WAYPOINTS, FLORENCE_TRACK } from '../constants';
 
@@ -13,16 +14,15 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities, userLocation, f
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
     const layersRef = useRef<L.Layer[]>([]);
+    const tileLayerRef = useRef<L.TileLayer | null>(null);
+    const [isSatellite, setIsSatellite] = useState(false);
 
+    // Initialize Map Core
     useEffect(() => {
         if (!mapContainerRef.current || mapInstanceRef.current) return;
         
-        // Initialize Map
+        // Initialize Map without tile layer first
         const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([43.7731, 11.2553], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-            maxZoom: 18, 
-            attribution: '&copy; OpenStreetMap' 
-        }).addTo(map);
         
         mapInstanceRef.current = map;
 
@@ -32,6 +32,33 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities, userLocation, f
         };
     }, []);
 
+    // Handle Tile Layer Switching (Standard vs Satellite)
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // Remove existing tile layer if present
+        if (tileLayerRef.current) {
+            map.removeLayer(tileLayerRef.current);
+        }
+
+        const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        const satelliteAttrib = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+        
+        const standardUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        const standardAttrib = '&copy; OpenStreetMap &copy; CARTO';
+
+        const newTileLayer = L.tileLayer(isSatellite ? satelliteUrl : standardUrl, {
+            maxZoom: 19,
+            attribution: isSatellite ? satelliteAttrib : standardAttrib
+        });
+
+        newTileLayer.addTo(map);
+        tileLayerRef.current = newTileLayer;
+
+    }, [isSatellite]);
+
+    // Handle Markers and Track Logic
     useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
@@ -88,9 +115,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities, userLocation, f
         // Add Track Polyline
         if (FLORENCE_TRACK.length > 0) {
             const trackLine = L.polyline(FLORENCE_TRACK, { 
-                color: '#1e3a8a', 
+                color: isSatellite ? '#fbbf24' : '#1e3a8a', // Yellow on satellite, Blue on standard
                 weight: 4, 
-                opacity: 0.7, 
+                opacity: 0.8, 
                 dashArray: '8, 12' 
             }).addTo(map);
             layersRef.current.push(trackLine);
@@ -106,7 +133,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities, userLocation, f
             const marker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
             layersRef.current.push(marker);
         }
-    }, [activities, userLocation]);
+    }, [activities, userLocation, isSatellite]); // Re-run if satellite changes to update polyline color
 
     useEffect(() => { 
         if (mapInstanceRef.current && focusedLocation) {
@@ -114,7 +141,29 @@ const MapComponent: React.FC<MapComponentProps> = ({ activities, userLocation, f
         }
     }, [focusedLocation]);
 
-    return <div ref={mapContainerRef} className="w-full h-full z-0" />;
+    return (
+        <div className="relative w-full h-full">
+            <div ref={mapContainerRef} className="w-full h-full z-0" />
+            
+            {/* Map Type Toggle Button */}
+            <button
+                onClick={() => setIsSatellite(!isSatellite)}
+                className="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-sm text-blue-900 p-3 rounded-2xl shadow-lg border border-white/50 active:scale-95 transition-all hover:bg-white"
+                aria-label="Cambiar tipo de mapa"
+            >
+                <Layers size={24} className={isSatellite ? "text-blue-600" : "text-slate-600"} />
+                <span className="sr-only">Cambiar Capas</span>
+            </button>
+            
+            {isSatellite && (
+                 <div className="absolute bottom-6 left-4 right-14 z-[400] pointer-events-none">
+                    <span className="text-[10px] font-bold text-white/80 bg-black/40 px-2 py-1 rounded backdrop-blur-md">
+                        Vista Satélite
+                    </span>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default MapComponent;
