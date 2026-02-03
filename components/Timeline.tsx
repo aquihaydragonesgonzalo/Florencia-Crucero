@@ -4,7 +4,7 @@ import {
     ExternalLink, AlertCircle, Headphones, Ticket, Maximize2, Navigation 
 } from 'lucide-react';
 import { ItineraryItem, Coords } from '../types';
-import { formatMinutes, calculateDuration, calculateTimeProgress } from '../utils';
+import { formatMinutes, calculateDuration, calculateTimeProgress, calculateDistance, calculateBearing } from '../utils';
 
 interface TimelineProps {
     itinerary: ItineraryItem[];
@@ -15,9 +15,27 @@ interface TimelineProps {
     onImageClick: (url: string) => void;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLocate, onOpenAudioGuide, onImageClick }) => {
+const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLocate, userLocation, onOpenAudioGuide, onImageClick }) => {
     const [, setTick] = useState(0);
+    const [heading, setHeading] = useState(0);
+
+    // Update time every minute
     useEffect(() => { const t = setInterval(() => setTick(n => n + 1), 60000); return () => clearInterval(t); }, []);
+
+    // Handle device orientation for compass
+    useEffect(() => {
+        const handleOrientation = (event: DeviceOrientationEvent) => {
+            // iOS uses webkitCompassHeading, others use alpha
+            // This is a best-effort implementation without forcing permission request UI
+            const compass = (event as any).webkitCompassHeading || (event.alpha ? 360 - event.alpha : 0);
+            setHeading(compass);
+        };
+
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+        return () => window.removeEventListener('deviceorientation', handleOrientation);
+    }, []);
 
     const calculateGap = (endStrPrev: string, startStrNext: string) => {
         const [endH, endM] = endStrPrev.split(':').map(Number);
@@ -48,6 +66,25 @@ const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLoca
                     const actProgress = calculateTimeProgress(act.startTime, act.endTime);
                     const gapProgress = prevAct ? calculateTimeProgress(prevAct.endTime, act.startTime) : 0;
                     
+                    // Distance and Direction Logic
+                    let distanceText = null;
+                    let arrowRotation = 0;
+                    
+                    if (userLocation && !act.completed) {
+                        const km = calculateDistance(userLocation.lat, userLocation.lng, act.coords.lat, act.coords.lng);
+                        const bearing = calculateBearing(userLocation.lat, userLocation.lng, act.coords.lat, act.coords.lng);
+                        
+                        // If heading is 0 (no device orientation), arrow points to bearing (North Up map style)
+                        // If heading exists, arrow acts like a compass
+                        arrowRotation = bearing - heading; 
+                        
+                        if (km < 1) {
+                            distanceText = `${Math.round(km * 1000)} m`;
+                        } else {
+                            distanceText = `${km.toFixed(1)} km`;
+                        }
+                    }
+
                     return (
                         <React.Fragment key={act.id}>
                             {gap > 0 && prevAct && (
@@ -103,9 +140,22 @@ const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLoca
                                             {isCritical && <AlertTriangle className="text-rose-600 animate-pulse" size={20} />}
                                         </div>
 
-                                        <div className="mb-3 text-sm text-slate-600 flex items-center">
-                                            <MapPin size={14} className="mr-0.5 text-blue-700"/> 
-                                            <span className="font-medium">{act.locationName}</span>
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <div className="flex items-center text-sm text-slate-600 max-w-[65%]">
+                                                <MapPin size={14} className="mr-0.5 text-blue-700 shrink-0"/> 
+                                                <span className="font-medium truncate">{act.locationName}</span>
+                                            </div>
+                                            {distanceText && (
+                                                <div className="flex items-center bg-blue-100/50 px-2 py-1 rounded-lg border border-blue-200">
+                                                    <Navigation 
+                                                        size={12} 
+                                                        className="text-blue-600 mr-1.5 transition-transform duration-500 ease-out" 
+                                                        style={{ transform: `rotate(${arrowRotation}deg)` }} 
+                                                        fill="currentColor" 
+                                                    />
+                                                    <span className="text-[10px] font-black text-blue-800 tabular-nums">{distanceText}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <p className="text-sm text-slate-600 mb-4 leading-relaxed whitespace-pre-line">{act.description}</p>

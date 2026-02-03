@@ -1,3 +1,4 @@
+
 export const formatMinutes = (mins: number): string => {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -28,4 +29,33 @@ export const calculateTimeProgress = (startTime: string, endTime: string): numbe
     if (currentMinutes < startMinutes) return 0;
     if (currentMinutes >= endMinutes) return 100;
     return Math.min(100, Math.max(0, ((currentMinutes - startMinutes) / (endMinutes - startMinutes)) * 100));
+};
+
+// Calculates distance in kilometers between two coords
+export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+};
+
+// Calculates bearing (angle 0-360) from point 1 to point 2
+export const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const toRad = (deg: number) => deg * Math.PI / 180;
+    const toDeg = (rad: number) => rad * 180 / Math.PI;
+    
+    const phi1 = toRad(lat1);
+    const phi2 = toRad(lat2);
+    const deltaLambda = toRad(lon2 - lon1);
+
+    const y = Math.sin(deltaLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) -
+            Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+    
+    let theta = Math.atan2(y, x);
+    return (toDeg(theta) + 360) % 360;
 };
