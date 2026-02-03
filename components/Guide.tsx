@@ -135,7 +135,8 @@ const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
             return [time, activity, details, meta];
         });
 
-        autoTable(doc, {
+        // Use 'any' cast to avoid TypeScript build errors with jspdf-autotable types
+        (autoTable as any)(doc, {
             startY: finalY,
             head: [['Hora', 'Actividad & Ubicación', 'Detalles & Contingencias', 'Info']],
             body: tableBody,
@@ -149,12 +150,12 @@ const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
             },
             styles: { 
                 fontSize: 8, 
-                cellPadding: 4, // Increased padding to prevent crowding
+                cellPadding: 4,
                 valign: 'middle', 
                 overflow: 'linebreak',
                 lineColor: [230, 230, 230],
                 lineWidth: 0.1,
-                font: 'helvetica' // Ensure standard font usage
+                font: 'helvetica'
             },
             columnStyles: {
                 0: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: [30, 58, 138] }, 
@@ -165,14 +166,14 @@ const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
             alternateRowStyles: {
                 fillColor: [248, 250, 252]
             },
-            didDrawPage: function (data) {
+            didDrawPage: function (data: any) {
                 // Footer
-                const pageCount = doc.internal.getNumberOfPages();
+                const pageCount = doc.getNumberOfPages();
                 doc.setFontSize(8);
                 doc.setTextColor(150);
                 const pageSize = doc.internal.pageSize;
                 const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-                doc.text(`Pagina ${doc.internal.getCurrentPageInfo().pageNumber} de ${pageCount}`, data.settings.margin.left, pageHeight - 10);
+                doc.text(`Pagina ${doc.getCurrentPageInfo().pageNumber} de ${pageCount}`, data.settings.margin.left, pageHeight - 10);
                 doc.text('Generado por Florencia 2026 App', pageSize.width - 15, pageHeight - 10, { align: 'right' });
             }
         });
