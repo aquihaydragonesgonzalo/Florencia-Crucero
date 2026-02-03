@@ -122,7 +122,7 @@ const App: React.FC = () => {
                 )}
                 {activeTab === 'map' && (<MapComponent activities={itinerary} userLocation={userLocation} focusedLocation={mapFocus} />)}
                 {activeTab === 'budget' && <Budget itinerary={itinerary} />}
-                {activeTab === 'guide' && <Guide userLocation={userLocation} />}
+                {activeTab === 'guide' && <Guide userLocation={userLocation} itinerary={itinerary} />}
 
                 {/* Fullscreen Image Modal */}
                 {expandedImage && (

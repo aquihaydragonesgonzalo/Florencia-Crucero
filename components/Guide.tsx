@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Sun, Cloud, CloudRain, CloudLightning, Wind, Activity as ActivityIcon, 
-    Clock, Footprints, PhoneCall, Send, Thermometer, CalendarDays, Languages, Volume2 
+    Clock, Footprints, PhoneCall, Send, Thermometer, CalendarDays, Languages, Volume2, FileDown 
 } from 'lucide-react';
-import { Coords, WeatherData } from '../types';
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
+import { Coords, WeatherData, ItineraryItem } from '../types';
 import { PRONUNCIATIONS } from '../constants';
 
 interface GuideProps {
     userLocation: Coords | null;
+    itinerary: ItineraryItem[];
 }
 
-const Guide: React.FC<GuideProps> = ({ userLocation }) => {
+const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
     const [playing, setPlaying] = useState<string | null>(null);
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [loadingWeather, setLoadingWeather] = useState(true);
@@ -56,6 +59,127 @@ const Guide: React.FC<GuideProps> = ({ userLocation }) => {
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     };
 
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+        const totalBudget = itinerary.reduce((acc, item) => acc + item.priceEUR, 0);
+
+        // --- HEADER BACKGROUND ---
+        doc.setFillColor(30, 58, 138); // Blue 900
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        // --- HEADER TEXT ---
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(26);
+        doc.setFont("helvetica", "bold");
+        doc.text("FLORENCIA 2026", 14, 18);
+        
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text("Guía de Escala & Itinerario Detallado", 14, 26);
+        doc.text("Fecha: 15 Abril 2026", 14, 32);
+
+        // --- SHIP INFO (Header Right) ---
+        doc.setFontSize(10);
+        doc.text("TODOS A BORDO: 19:30", 195, 18, { align: 'right' });
+        doc.text("SALIDA: 20:00", 195, 24, { align: 'right' });
+        doc.setFont("helvetica", "bold");
+        doc.text("EMERGENCIA: +39 112", 195, 32, { align: 'right' });
+
+        // --- SUMMARY SECTION ---
+        let finalY = 50;
+        
+        doc.setTextColor(30, 58, 138);
+        doc.setFontSize(14);
+        doc.text("Resumen de la Visita", 14, finalY);
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, finalY + 2, 195, finalY + 2);
+
+        finalY += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont("helvetica", "normal");
+        
+        doc.text(`• Presupuesto Estimado: EUR ${totalBudget}`, 14, finalY);
+        doc.text(`• Puntos de Interés: ${itinerary.filter(i => i.type === 'sightseeing').length}`, 80, finalY);
+        doc.text(`• Distancia Aprox: ~5.5 km`, 140, finalY);
+        
+        finalY += 6;
+        doc.setTextColor(180, 0, 0);
+        doc.setFont("helvetica", "bold");
+        doc.text(`• NOTA CRITICA: Tren de vuelta 15:26. Siguiente: 16:28 (Arriesgado).`, 14, finalY);
+
+        // --- ITINERARY TABLE ---
+        finalY += 12;
+
+        const tableBody = itinerary.map(item => {
+            // NOTE: Removed Emojis as standard jsPDF fonts do not support them and they cause text overlapping.
+            const time = `${item.startTime}\n-\n${item.endTime}`;
+            
+            let activity = item.title.toUpperCase();
+            if (item.type === 'sightseeing') activity = `(VISITA) ${activity}`;
+            if (item.type === 'logistics') activity = `(!) ${activity}`;
+            
+            // Replaced emoji icons with text labels
+            activity += `\nLugar: ${item.locationName}`;
+            if (item.endLocationName) activity += `\n-> ${item.endLocationName}`;
+
+            let details = item.description;
+            if (item.keyDetails) details += `\nNota: ${item.keyDetails}`;
+            if (item.contingencyNote) details += `\nALERTA: ${item.contingencyNote.toUpperCase()}`;
+            
+            let meta = item.type.toUpperCase();
+            if (item.priceEUR > 0) meta += `\nEUR ${item.priceEUR}`;
+            if (item.notes === 'CRITICAL') meta += `\nCRITICO`;
+
+            return [time, activity, details, meta];
+        });
+
+        autoTable(doc, {
+            startY: finalY,
+            head: [['Hora', 'Actividad & Ubicación', 'Detalles & Contingencias', 'Info']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [30, 58, 138], 
+                textColor: 255, 
+                fontStyle: 'bold',
+                halign: 'center',
+                valign: 'middle'
+            },
+            styles: { 
+                fontSize: 8, 
+                cellPadding: 4, // Increased padding to prevent crowding
+                valign: 'middle', 
+                overflow: 'linebreak',
+                lineColor: [230, 230, 230],
+                lineWidth: 0.1,
+                font: 'helvetica' // Ensure standard font usage
+            },
+            columnStyles: {
+                0: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: [30, 58, 138] }, 
+                1: { cellWidth: 60, fontStyle: 'bold' },
+                2: { cellWidth: 'auto' }, 
+                3: { cellWidth: 25, halign: 'center', fontSize: 7 }
+            },
+            alternateRowStyles: {
+                fillColor: [248, 250, 252]
+            },
+            didDrawPage: function (data) {
+                // Footer
+                const pageCount = doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                const pageSize = doc.internal.pageSize;
+                const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+                doc.text(`Pagina ${doc.internal.getCurrentPageInfo().pageNumber} de ${pageCount}`, data.settings.margin.left, pageHeight - 10);
+                doc.text('Generado por Florencia 2026 App', pageSize.width - 15, pageHeight - 10, { align: 'right' });
+            }
+        });
+
+        doc.save('Florencia_Itinerario_Completo.pdf');
+    };
+
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric' }).format(date);
@@ -73,7 +197,16 @@ const Guide: React.FC<GuideProps> = ({ userLocation }) => {
 
     return (
         <div className="pb-32 px-4 pt-6 max-w-lg mx-auto h-full overflow-y-auto no-scrollbar">
-            <h2 className="text-2xl font-bold text-blue-900 mb-6 uppercase tracking-tight">Guía Florencia</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-blue-900 uppercase tracking-tight">Guía Florencia</h2>
+                <button 
+                    onClick={handleDownloadPDF}
+                    className="bg-blue-100 text-blue-800 p-2 rounded-xl active:scale-95 transition-transform hover:bg-blue-200"
+                    aria-label="Descargar Informe Detallado"
+                >
+                    <FileDown size={20} />
+                </button>
+            </div>
 
             <div className="mb-8 bg-white rounded-[2rem] border border-blue-50 shadow-md p-6 overflow-hidden relative">
                 <div className="flex items-center gap-2 mb-4">
