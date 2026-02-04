@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Clock, CheckCircle2, Circle, MapPin, AlertTriangle, 
+    CheckCircle2, Circle, MapPin, AlertTriangle, 
     ExternalLink, AlertCircle, Headphones, Ticket, Maximize2, Navigation, Footprints 
 } from 'lucide-react';
 import { ItineraryItem, Coords } from '../types';
@@ -16,7 +16,7 @@ interface TimelineProps {
 }
 
 const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLocate, userLocation, onOpenAudioGuide, onImageClick }) => {
-    const [tick, setTick] = useState(0);
+    const [, setTick] = useState(0);
     const [heading, setHeading] = useState(0);
 
     // Update time every minute
