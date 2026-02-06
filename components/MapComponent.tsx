@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Layers, MapPin, Plus, Trash2, X } from 'lucide-react';
+import { Layers, MapPin, Plus, X } from 'lucide-react';
 import { Coords, ItineraryItem, UserWaypoint } from '../types';
 import { GPX_WAYPOINTS, FLORENCE_TRACK } from '../constants';
 
