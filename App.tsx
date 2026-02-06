@@ -5,10 +5,11 @@ import Budget from './components/Budget';
 import Guide from './components/Guide';
 import MapComponent from './components/MapComponent';
 import { INITIAL_ITINERARY, SHIP_ONBOARD_TIME } from './constants';
-import { ItineraryItem, Coords } from './types';
+import { ItineraryItem, Coords, UserWaypoint } from './types';
 
 const App: React.FC = () => {
     const [itinerary, setItinerary] = useState<ItineraryItem[]>(INITIAL_ITINERARY);
+    const [userWaypoints, setUserWaypoints] = useState<UserWaypoint[]>([]);
     const [activeTab, setActiveTab] = useState<'timeline' | 'map' | 'budget' | 'guide'>('timeline');
     const [userLocation, setUserLocation] = useState<Coords | null>(null);
     const [mapFocus, setMapFocus] = useState<Coords | null>(null);
@@ -17,18 +18,28 @@ const App: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
-    // Load persisted state
+    // Load persisted state (Itinerary + User Waypoints)
     useEffect(() => {
-        const saved = localStorage.getItem('genova_guide_v1_storage');
-        if (saved) {
+        // Load Itinerary Status
+        const savedItinerary = localStorage.getItem('genova_guide_v1_storage');
+        if (savedItinerary) {
             try {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(savedItinerary);
                 const merged = INITIAL_ITINERARY.map(initItem => {
                     const savedItem = parsed.find((p: any) => p.id === initItem.id);
                     return savedItem ? { ...initItem, completed: savedItem.completed } : initItem;
                 });
                 setItinerary(merged);
-            } catch(e) { console.error("Error restoring state", e); }
+            } catch(e) { console.error("Error restoring itinerary", e); }
+        }
+
+        // Load User Waypoints
+        const savedWaypoints = localStorage.getItem('genova_guide_user_waypoints');
+        if (savedWaypoints) {
+            try {
+                const parsedWaypoints = JSON.parse(savedWaypoints);
+                setUserWaypoints(parsedWaypoints);
+            } catch(e) { console.error("Error restoring waypoints", e); }
         }
     }, []);
 
@@ -36,6 +47,18 @@ const App: React.FC = () => {
         const newItinerary = itinerary.map(act => act.id === id ? { ...act, completed: !act.completed } : act);
         setItinerary(newItinerary);
         localStorage.setItem('genova_guide_v1_storage', JSON.stringify(newItinerary));
+    };
+
+    const handleAddUserWaypoint = (waypoint: UserWaypoint) => {
+        const newWaypoints = [...userWaypoints, waypoint];
+        setUserWaypoints(newWaypoints);
+        localStorage.setItem('genova_guide_user_waypoints', JSON.stringify(newWaypoints));
+    };
+
+    const handleDeleteUserWaypoint = (id: string) => {
+        const newWaypoints = userWaypoints.filter(wp => wp.id !== id);
+        setUserWaypoints(newWaypoints);
+        localStorage.setItem('genova_guide_user_waypoints', JSON.stringify(newWaypoints));
     };
 
     // Geolocation
@@ -67,7 +90,7 @@ const App: React.FC = () => {
             }
         }, 1000);
         
-        // Remove simulated loader if present (handled via CSS mainly, but good practice)
+        // Remove simulated loader if present
         const loader = document.getElementById('initial-loader');
         if(loader) { 
             loader.style.opacity = '0'; 
@@ -120,7 +143,16 @@ const App: React.FC = () => {
                         />
                     </div>
                 )}
-                {activeTab === 'map' && (<MapComponent activities={itinerary} userLocation={userLocation} focusedLocation={mapFocus} />)}
+                {activeTab === 'map' && (
+                    <MapComponent 
+                        activities={itinerary} 
+                        userLocation={userLocation} 
+                        focusedLocation={mapFocus}
+                        userWaypoints={userWaypoints}
+                        onAddWaypoint={handleAddUserWaypoint}
+                        onDeleteWaypoint={handleDeleteUserWaypoint}
+                    />
+                )}
                 {activeTab === 'budget' && <Budget itinerary={itinerary} />}
                 {activeTab === 'guide' && <Guide userLocation={userLocation} itinerary={itinerary} />}
 

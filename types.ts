@@ -31,6 +31,15 @@ export interface Waypoint {
     lng: number;
 }
 
+export interface UserWaypoint {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    description?: string;
+    createdAt: number;
+}
+
 export interface Pronunciation {
     word: string;
     phonetic: string;
