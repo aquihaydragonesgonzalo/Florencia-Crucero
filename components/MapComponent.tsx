@@ -27,6 +27,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const [isCreating, setIsCreating] = useState(false);
     const [tempCoords, setTempCoords] = useState<Coords | null>(null);
     const [newWaypointName, setNewWaypointName] = useState('');
+    const [newWaypointDescription, setNewWaypointDescription] = useState('');
 
     // Initialize Map Core
     useEffect(() => {
@@ -40,6 +41,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         map.on('click', (e: L.LeafletMouseEvent) => {
             setTempCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
             setNewWaypointName('');
+            setNewWaypointDescription('');
             setIsCreating(true);
         });
 
@@ -121,9 +123,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
             const container = document.createElement('div');
             container.innerHTML = `
                 <div style="font-family: sans-serif; min-width: 150px;">
-                    <h4 style="margin: 0 0 4px 0; font-weight: bold; color: #5b21b6;">${wp.name}</h4>
-                    <p style="margin: 0 0 8px 0; font-size: 10px; color: #6b7280;">Añadido: ${new Date(wp.createdAt).toLocaleTimeString().slice(0,5)}</p>
-                    <button id="delete-btn-${wp.id}" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+                    <h4 style="margin: 0 0 4px 0; font-weight: bold; color: #5b21b6; font-size: 14px;">${wp.name}</h4>
+                    ${wp.description ? `<p style="margin: 0 0 8px 0; font-size: 11px; color: #475569; line-height: 1.4;">${wp.description}</p>` : ''}
+                    <p style="margin: 0 0 8px 0; font-size: 9px; color: #94a3b8;">Añadido: ${new Date(wp.createdAt).toLocaleTimeString().slice(0,5)}</p>
+                    <button id="delete-btn-${wp.id}" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase;">
                         ELIMINAR
                     </button>
                 </div>
@@ -187,11 +190,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 name: newWaypointName.trim(),
                 lat: tempCoords.lat,
                 lng: tempCoords.lng,
+                description: newWaypointDescription.trim(),
                 createdAt: Date.now()
             });
             setIsCreating(false);
             setTempCoords(null);
             setNewWaypointName('');
+            setNewWaypointDescription('');
         }
     };
 
@@ -216,7 +221,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             {/* Create Waypoint Modal (Bottom Sheet style) */}
             {isCreating && (
-                <div className="absolute inset-0 z-[500] bg-black/20 backdrop-blur-[2px] flex items-end">
+                <div className="absolute inset-0 z-[500] bg-black/40 backdrop-blur-[2px] flex items-end">
                     <div className="bg-white w-full rounded-t-[2rem] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-black text-violet-900 uppercase tracking-widest text-sm flex items-center gap-2">
@@ -235,7 +240,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
                                     value={newWaypointName}
                                     onChange={(e) => setNewWaypointName(e.target.value)}
                                     placeholder="Ej: Gelateria increíble..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-slate-300"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-slate-300 mb-4"
+                                />
+                                
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Descripción (Opcional)</label>
+                                <textarea 
+                                    value={newWaypointDescription}
+                                    onChange={(e) => setNewWaypointDescription(e.target.value)}
+                                    placeholder="Notas sobre el lugar..."
+                                    rows={2}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-slate-300 resize-none"
                                 />
                             </div>
                             <button 
