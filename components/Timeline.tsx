@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
     CheckCircle2, Circle, MapPin, AlertTriangle, 
-    ExternalLink, AlertCircle, Headphones, Ticket, Maximize2, Navigation, Footprints 
+    ExternalLink, AlertCircle, Headphones, Ticket, Maximize2, Navigation, Footprints,
+    Sun, Cloud, CloudRain, CloudLightning, Wind
 } from 'lucide-react';
-import { ItineraryItem, Coords } from '../types';
+import { ItineraryItem, Coords, WeatherData } from '../types';
 import { formatMinutes, calculateDuration, calculateTimeProgress, calculateDistance, calculateBearing } from '../utils';
 
 interface TimelineProps {
@@ -13,9 +14,10 @@ interface TimelineProps {
     userLocation: Coords | null;
     onOpenAudioGuide: (act: ItineraryItem) => void;
     onImageClick: (url: string) => void;
+    weather: WeatherData | null;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLocate, userLocation, onOpenAudioGuide, onImageClick }) => {
+const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLocate, userLocation, onOpenAudioGuide, onImageClick, weather }) => {
     const [, setTick] = useState(0);
     const [heading, setHeading] = useState(0);
 
@@ -64,6 +66,35 @@ const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLoca
         return currentMins >= startTotal && currentMins < endTotal;
     };
 
+    // Helper to get weather icon
+    const getWeatherIcon = (code: number, size = 14) => {
+        if (code <= 1) return <Sun size={size} className="text-amber-500" />;
+        if (code <= 3) return <Cloud size={size} className="text-slate-400" />;
+        if (code <= 67) return <CloudRain size={size} className="text-blue-500" />;
+        if (code <= 99) return <CloudLightning size={size} className="text-purple-500" />;
+        return <Wind size={size} className="text-slate-400" />;
+    };
+
+    // Find weather for the specific hour of the activity
+    const getWeatherForActivity = (startTime: string) => {
+        if (!weather) return null;
+        const [startH] = startTime.split(':').map(Number);
+        
+        // Find index where the time string contains the hour (e.g. "T10:00")
+        const index = weather.hourly.time.findIndex(t => {
+            const date = new Date(t);
+            return date.getHours() === startH;
+        });
+
+        if (index !== -1) {
+            return {
+                temp: Math.round(weather.hourly.temperature[index]),
+                code: weather.hourly.code[index]
+            };
+        }
+        return null;
+    };
+
     return (
         <div className="pb-24 px-4 pt-4 max-w-lg mx-auto">
             <div className="flex justify-between items-end mb-6">
@@ -86,6 +117,7 @@ const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLoca
                     const actProgress = calculateTimeProgress(act.startTime, act.endTime);
                     const gapProgress = prevAct ? calculateTimeProgress(prevAct.endTime, act.startTime) : 0;
                     const isActive = isActivityActive(act.startTime, act.endTime);
+                    const actWeather = getWeatherForActivity(act.startTime);
                     
                     // Distance and Direction Logic
                     let distanceText = null;
@@ -181,13 +213,19 @@ const Timeline: React.FC<TimelineProps> = ({ itinerary, onToggleComplete, onLoca
                                     <div className="p-5">
                                         <div className="flex justify-between items-start mb-2 pr-12"> {/* pr-12 para espacio de etiqueta EN CURSO */}
                                             <div>
-                                                <div className="flex items-center space-x-2 mb-2">
+                                                <div className="flex items-center flex-wrap gap-2 mb-2">
                                                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-tighter uppercase ${isActive ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
                                                         {act.startTime} - {act.endTime}
                                                     </span>
                                                     <span className="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
                                                         {duration}
                                                     </span>
+                                                    {actWeather && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-100">
+                                                            {getWeatherIcon(actWeather.code)}
+                                                            <span className="ml-1">{actWeather.temp}°</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <h3 className={`font-bold text-lg leading-tight ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{act.title}</h3>
                                             </div>

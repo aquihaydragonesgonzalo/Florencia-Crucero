@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     Sun, Cloud, CloudRain, CloudLightning, Wind, Activity as ActivityIcon, 
     Clock, Footprints, PhoneCall, Send, Thermometer, CalendarDays, Languages, Volume2, FileDown 
@@ -11,28 +11,11 @@ import { PRONUNCIATIONS } from '../constants';
 interface GuideProps {
     userLocation: Coords | null;
     itinerary: ItineraryItem[];
+    weather: WeatherData | null;
 }
 
-const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
+const Guide: React.FC<GuideProps> = ({ userLocation, itinerary, weather }) => {
     const [playing, setPlaying] = useState<string | null>(null);
-    const [weather, setWeather] = useState<WeatherData | null>(null);
-    const [loadingWeather, setLoadingWeather] = useState(true);
-
-    useEffect(() => {
-        const fetchWeather = async () => {
-            try {
-                const response = await fetch(
-                    'https://api.open-meteo.com/v1/forecast?latitude=43.77&longitude=11.25&hourly=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FRome'
-                );
-                const data = await response.json();
-                setWeather({
-                    hourly: { time: data.hourly.time, temperature: data.hourly.temperature_2m, code: data.hourly.weathercode },
-                    daily: { time: data.daily.time, weathercode: data.daily.weathercode, temperature_2m_max: data.daily.temperature_2m_max, temperature_2m_min: data.daily.temperature_2m_min }
-                });
-            } catch (error) { console.error("Clima error:", error); } finally { setLoadingWeather(false); }
-        };
-        fetchWeather();
-    }, []);
 
     const getWeatherIcon = (code: number, size = 20) => {
         if (code <= 1) return <Sun size={size} className="text-amber-500" />;
@@ -233,12 +216,12 @@ const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
 
             <div className="mb-8">
                 <h3 className="text-sm font-black text-slate-800 mb-4 flex items-center uppercase tracking-widest px-1"><Thermometer size={18} className="mr-2 text-blue-900"/> Tiempo en Florencia</h3>
-                {loadingWeather ? (<div className="h-24 bg-white rounded-3xl animate-pulse border border-blue-50"></div>) : (
+                {!weather ? (<div className="h-24 bg-white rounded-3xl animate-pulse border border-blue-50"></div>) : (
                     <>
                         <div className="bg-white p-2 pb-5 rounded-[2.5rem] border border-blue-50 shadow-xl overflow-hidden mb-4">
                             <h4 className="text-[10px] font-black text-blue-300 uppercase tracking-widest text-center mt-2 mb-2">Hoy</h4>
                             <div className="flex overflow-x-auto gap-3 px-6 py-2 no-scrollbar">
-                                {weather?.hourly.time.map((time, i) => {
+                                {weather.hourly.time.map((time, i) => {
                                     const hour = new Date(time).getHours();
                                     if (hour >= 8 && hour <= 20) return (
                                         <div key={time} className="flex flex-col items-center justify-between min-w-[70px] p-3 bg-blue-50/50 rounded-3xl border border-blue-100">
@@ -254,7 +237,7 @@ const Guide: React.FC<GuideProps> = ({ userLocation, itinerary }) => {
                         <div className="bg-white rounded-[2rem] border border-blue-50 shadow-lg p-5">
                             <div className="flex items-center gap-2 mb-4 px-1"><CalendarDays size={16} className="text-blue-500" /><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Próximos 5 días</span></div>
                             <div className="space-y-1">
-                                {weather?.daily.time.slice(0, 5).map((day, i) => (
+                                {weather.daily.time.slice(0, 5).map((day, i) => (
                                     <div key={day} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
                                         <span className="w-16 text-xs font-bold text-slate-600 capitalize">{formatDate(day)}</span>
                                         <div className="flex items-center gap-3">{getWeatherIcon(weather.daily.weathercode[i], 18)}</div>

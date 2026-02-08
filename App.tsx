@@ -5,7 +5,7 @@ import Budget from './components/Budget';
 import Guide from './components/Guide';
 import MapComponent from './components/MapComponent';
 import { INITIAL_ITINERARY, SHIP_ONBOARD_TIME } from './constants';
-import { ItineraryItem, Coords, UserWaypoint } from './types';
+import { ItineraryItem, Coords, UserWaypoint, WeatherData } from './types';
 
 const App: React.FC = () => {
     const [itinerary, setItinerary] = useState<ItineraryItem[]>(INITIAL_ITINERARY);
@@ -17,6 +17,7 @@ const App: React.FC = () => {
     const [audioGuideActivity, setAudioGuideActivity] = useState<ItineraryItem | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
+    const [weather, setWeather] = useState<WeatherData | null>(null);
 
     // Load persisted state (Itinerary + User Waypoints)
     useEffect(() => {
@@ -71,6 +72,23 @@ const App: React.FC = () => {
             );
             return () => navigator.geolocation.clearWatch(watchId);
         }
+    }, []);
+
+    // Weather Fetching
+    useEffect(() => {
+        const fetchWeather = async () => {
+            try {
+                const response = await fetch(
+                    'https://api.open-meteo.com/v1/forecast?latitude=43.77&longitude=11.25&hourly=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FRome'
+                );
+                const data = await response.json();
+                setWeather({
+                    hourly: { time: data.hourly.time, temperature: data.hourly.temperature_2m, code: data.hourly.weathercode },
+                    daily: { time: data.daily.time, weathercode: data.daily.weathercode, temperature_2m_max: data.daily.temperature_2m_max, temperature_2m_min: data.daily.temperature_2m_min }
+                });
+            } catch (error) { console.error("Clima error:", error); }
+        };
+        fetchWeather();
     }, []);
 
     // Countdown Timer
@@ -140,6 +158,7 @@ const App: React.FC = () => {
                             userLocation={userLocation} 
                             onOpenAudioGuide={(act) => setAudioGuideActivity(act)}
                             onImageClick={(url) => setExpandedImage(url)}
+                            weather={weather}
                         />
                     </div>
                 )}
@@ -154,7 +173,7 @@ const App: React.FC = () => {
                     />
                 )}
                 {activeTab === 'budget' && <Budget itinerary={itinerary} />}
-                {activeTab === 'guide' && <Guide userLocation={userLocation} itinerary={itinerary} />}
+                {activeTab === 'guide' && <Guide userLocation={userLocation} itinerary={itinerary} weather={weather} />}
 
                 {/* Fullscreen Image Modal */}
                 {expandedImage && (
